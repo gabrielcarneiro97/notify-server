@@ -7,8 +7,17 @@ function converteData(string) {
   return new Date(ano, parseInt(mes, 10) - 1, dia);
 }
 
-class Movimento {
+class Boleto {
+  constructor(lines) {
+    const linhaP = lines[0];
+    const linhaQ = lines[1];
+    const linhaR = lines[2];
 
+    this.valor = parseFloat(`${linhaP.slice(85, 98)}.${linhaP.slice(98, 100)}`);
+
+    console.log(this.valor);
+
+  }
 }
 
 class Remessa {
@@ -18,11 +27,14 @@ class Remessa {
     this.stringFile = buffer.toString('utf-8');
 
     this.header = this.defineHeader();
+    this.boletos = this.defineBoletos();
   }
 
   lineByline() {
     return this.stringFile.replace(/\r/g, '').split('\n');
   }
+
+
   defineHeader() {
     const lines = this.lineByline().slice(0, 2);
 
@@ -47,6 +59,14 @@ class Remessa {
     };
 
     return header;
+  }
+
+  defineBoletos() {
+    const lines = this.lineByline().filter(line => line.startsWith('00100013'));
+
+    for (let i = 0; i < lines.length - 3; i += 3) {
+      const boleto = new Boleto([lines[i], lines[i + 1], lines[i + 2]]);
+    }
   }
 }
 
