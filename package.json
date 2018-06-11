@@ -1,0 +1,17 @@
+{
+  "name": "notify-server",
+  "version": "0.0.1",
+  "main": "main.js",
+  "repository": "https://github.com/gabrielcarneiro97/notify-server.git",
+  "author": "Gabriel Carneiro <gabriel.carneiro97@live.com>",
+  "license": "MIT",
+  "private": true,
+  "dependencies": {
+    "eslint": "^4.19.1",
+    "express": "^4.16.3"
+  },
+  "devDependencies": {
+    "eslint-config-airbnb-base": "^12.1.0",
+    "eslint-plugin-import": "^2.12.0"
+  }
+}
