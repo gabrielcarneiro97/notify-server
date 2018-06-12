@@ -6,6 +6,10 @@
   "author": "Gabriel Carneiro <gabriel.carneiro97@live.com>",
   "license": "MIT",
   "private": true,
+  "scripts": {
+    "start": "node main.js",
+    "ssl": "node main.js ssl"
+  },
   "dependencies": {
     "cors": "^2.8.4",
     "eslint": "^4.19.1",

@@ -1,41 +1,8 @@
-function converteData(string) {
-  const dia = string.slice(0, 2);
-  const mes = string.slice(2, 4);
-  const ano = string.slice(4, 8);
-  return new Date(ano, parseInt(mes, 10) - 1, dia);
-}
-
-function converteValor(string) {
-  const int = string.slice(0, 13);
-  const float = string.slice(string.length - 2, string.length);
-  return parseFloat(`${int}.${float}`);
-}
-
-class Titulo {
-  constructor({ linhaP, linhaQ, linhaR }) {
-    this.pago = false;
-
-    this.valorBruto = converteValor(linhaP.slice(85, 100));
-    this.desconto = converteValor(linhaP.slice(180, 195));
-    this.valorLiquido = this.valorBruto - this.desconto;
-
-    this.vencimento = converteData(linhaP.slice(77, 85));
-    this.emissao = converteData(linhaP.slice(109, 117));
-    this.id = linhaP.slice(37, 57).trim();
-
-    this.pagador = {
-      id: linhaQ.charAt(17) === '1' ? linhaQ.slice(21, 33) : linhaQ.slice(18, 33),
-      nome: linhaQ.slice(33, 73).trim(),
-    };
-
-    this.menssagem = linhaR.slice(99, 139).trim();
-  }
-}
+const { converteData } = require('../services');
+const { Titulo } = require('./Titulo');
 
 class Remessa {
   constructor(buffer) {
-    this.buffer = buffer;
-
     this.stringFile = buffer.toString('utf-8');
 
     this.defineHeader();
@@ -101,6 +68,10 @@ class Remessa {
       }
     });
 
+    if (linhasTitulo.linhaP && linhasTitulo.linhaQ && linhasTitulo.linhaR) {
+      titulos.push(new Titulo(linhasTitulo));
+    }
+
     this.titulos = titulos;
 
     return this;
@@ -114,6 +85,16 @@ class Remessa {
     });
 
     return this;
+  }
+
+  semLines() {
+    const self = {
+      ...this,
+    };
+    delete self.__lines;
+    delete self.stringFile;
+
+    return self;
   }
 }
 

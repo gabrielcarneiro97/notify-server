@@ -1,9 +1,40 @@
-const fs = require('fs');
-const { Remessa } = require('./Remessa');
 const express = require('express');
+const multer = require('multer');
+const cors = require('cors');
+const whiteListArray = require('./white_list.json');
+
+const { Remessa } = require('./classes/Remessa');
 
 const app = express();
+const upload = multer();
 
-const rem = new Remessa(fs.readFileSync('./CNAB240_1630_32135_050418_268.REM'));
+app.options('*', cors());
+app.use(cors());
 
-console.log(rem);
+app.post('/file', upload.single('file'), (req, res) => {
+  const { file } = req;
+  const rem = new Remessa(file.buffer);
+
+  res.send(rem.semLines());
+});
+
+app.get('/whitelist', (req, res) => {
+  const { email } = req.query;
+  if (whiteListArray.includes(email)) {
+    res.sendStatus(204);
+  } else {
+    res.sendStatus(401);
+  }
+});
+
+if (process.argv[2] === 'ssl') {
+  // https.createServer(SSL, app).listen(8080, () => {
+  //   console.log('SSL server listening 8080 port');
+  // });
+} else {
+  const server = app.listen(8080, () => {
+    const { address } = server.address();
+    const { port } = server.address();
+    console.log(`App listening at http://${address}:${port}`);
+  });
+}
