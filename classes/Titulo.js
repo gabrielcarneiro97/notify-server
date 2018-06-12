@@ -11,6 +11,7 @@ class Titulo {
     this.vencimento = converteData(linhaP.slice(77, 85));
     this.emissao = converteData(linhaP.slice(109, 117));
     this.id = linhaP.slice(37, 57).trim();
+    this.numeroDocumento = linhaP.slice(62, 77).trim();
 
     this.pagador = {
       id: linhaQ.charAt(17) === '1' ? linhaQ.slice(22, 33) : linhaQ.slice(18, 33),

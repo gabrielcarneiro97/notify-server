@@ -1,15 +1,25 @@
 const express = require('express');
 const multer = require('multer');
+const bodyParser = require('body-parser');
 const cors = require('cors');
 const whiteListArray = require('./white_list.json');
 
 const { Remessa } = require('./classes/Remessa');
+const { gravarTitulos } = require('./services');
 
 const app = express();
 const upload = multer();
 
 app.options('*', cors());
 app.use(cors());
+
+app.post('/titulos', bodyParser.json(), (req, res) => {
+  const titulos = req.body;
+
+  gravarTitulos(titulos).then(() => {
+    res.sendStatus(201);
+  });
+});
 
 app.post('/file', upload.single('file'), (req, res) => {
   const { file } = req;
