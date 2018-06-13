@@ -33,6 +33,79 @@ function gravarTitulos(titulos) {
   });
 }
 
+function pegarTitulosPorPeriodo(dados) {
+  const titulosCollection = db.collection('Titulos');
+  let {
+    inicio, fim, soPagos, soEmAberto,
+  } = dados;
+  const { empresaCnpj } = dados;
+
+  inicio = parseInt(inicio, 10);
+  fim = parseInt(fim, 10);
+  soPagos = soPagos === 'true';
+  soEmAberto = soEmAberto === 'true';
+
+  console.log(inicio, fim);
+
+  return new Promise((resolve, reject) => {
+    let query = titulosCollection
+      .where('vencimento.timestamp', '>=', inicio)
+      .where('vencimento.timestamp', '<=', fim);
+
+    if (soPagos) {
+      console.log('aqui');
+      query = query.where('pago', '==', true);
+    }
+
+    if (soEmAberto) {
+      query = query.where('pago', '==', false);
+    }
+
+    if (empresaCnpj) {
+      query = query.where('pagante.id', '==', empresaCnpj);
+    }
+
+    query
+      .get()
+      .then((snap) => {
+        const snapDocs = snap._docs();
+        const docs = [];
+
+        snapDocs.forEach((doc) => {
+          docs.push(doc.data());
+        });
+        resolve(docs);
+      })
+      .catch(err => reject(err));
+  });
+}
+
+function mudarCampoTitulo(key, field, value) {
+  return new Promise((resolve, reject) => {
+    db
+      .collection('Titulos')
+      .doc(key)
+      .update({ [field]: value })
+      .then(snap => resolve(snap))
+      .catch(err => reject(err));
+  });
+}
+
+function deletarTitulo(id) {
+  return new Promise((resolve, reject) => {
+    db
+      .collection('Titulos')
+      .doc(id)
+      .delete()
+      .then(() => resolve())
+      .catch(err => reject(err));
+  });
+}
+
 module.exports = {
+  db,
   gravarTitulos,
+  pegarTitulosPorPeriodo,
+  mudarCampoTitulo,
+  deletarTitulo,
 };

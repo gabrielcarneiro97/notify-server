@@ -8,8 +8,14 @@ class Titulo {
     this.desconto = converteValor(linhaP.slice(180, 195));
     this.valorLiquido = this.valorBruto - this.desconto;
 
-    this.vencimento = converteData(linhaP.slice(77, 85));
-    this.emissao = converteData(linhaP.slice(109, 117));
+    this.vencimento = {
+      data: converteData(linhaP.slice(77, 85)),
+      timestamp: converteData(linhaP.slice(77, 85)).getTime(),
+    };
+    this.emissao = {
+      data: converteData(linhaP.slice(109, 117)),
+      timestamp: converteData(linhaP.slice(109, 117)).getTime(),
+    }
     this.id = linhaP.slice(37, 57).trim();
     this.numeroDocumento = linhaP.slice(62, 77).trim();
 
