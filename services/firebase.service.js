@@ -8,6 +8,8 @@ admin.initializeApp({
 
 const db = admin.firestore();
 
+const DELETE_FIELD = admin.firestore.FieldValue.delete();
+
 function gravarTitulos(titulos) {
   const titulosCollection = db.collection('Titulos');
 
@@ -45,15 +47,12 @@ function pegarTitulosPorPeriodo(dados) {
   soPagos = soPagos === 'true';
   soEmAberto = soEmAberto === 'true';
 
-  console.log(inicio, fim);
-
   return new Promise((resolve, reject) => {
     let query = titulosCollection
       .where('vencimento.timestamp', '>=', inicio)
       .where('vencimento.timestamp', '<=', fim);
 
     if (soPagos) {
-      console.log('aqui');
       query = query.where('pago', '==', true);
     }
 
@@ -66,6 +65,27 @@ function pegarTitulosPorPeriodo(dados) {
     }
 
     query
+      .get()
+      .then((snap) => {
+        const snapDocs = snap._docs();
+        const docs = [];
+
+        snapDocs.forEach((doc) => {
+          docs.push(doc.data());
+        });
+        resolve(docs);
+      })
+      .catch(err => reject(err));
+  });
+}
+
+function pegarTitulosValidosEmAberto() {
+  const titulosCollection = db.collection('Titulos');
+
+  return new Promise((resolve, reject) => {
+    titulosCollection
+      .where('vencimento.timestamp', '>=', new Date().getTime())
+      .where('pago', '==', false)
       .get()
       .then((snap) => {
         const snapDocs = snap._docs();
@@ -102,10 +122,115 @@ function deletarTitulo(id) {
   });
 }
 
+function pegarEmpresas() {
+  return new Promise((resolve, reject) => {
+    db
+      .collection('Empresas')
+      .get()
+      .then((snap) => {
+        const snapDocs = snap._docs();
+        const docs = [];
+
+        snapDocs.forEach((doc) => {
+          docs.push(doc.data());
+        });
+        resolve(docs);
+      })
+      .catch(err => reject(err));
+  });
+}
+
+
+function pegarEmpresaNumero(numero) {
+  return new Promise((resolve, reject) => {
+    db
+      .collection('Empresas')
+      .doc(numero)
+      .get()
+      .then(snap => resolve(snap.data()))
+      .catch(err => reject(err));
+  });
+}
+
+
+function gravarEmpresa(numero, dados) {
+  return new Promise((resolve, reject) => {
+    db
+      .collection('Empresas')
+      .doc(numero)
+      .set(dados)
+      .then(() => resolve())
+      .catch(err => reject(err));
+  });
+}
+
+function deletarEmpresa(numero) {
+  return new Promise((resolve, reject) => {
+    db
+      .collection('Empresas')
+      .doc(numero)
+      .delete()
+      .then(() => resolve())
+      .catch(err => reject(err));
+  });
+}
+
+function novoSms(dados) {
+  return new Promise((resolve, reject) => {
+    const { idTitulo } = dados;
+
+    db
+      .collection('Sms')
+      .add(dados)
+      .then((snap) => {
+        const smsId = snap.id;
+
+        // Fazer request para a Zenvia aqui
+
+        mudarCampoTitulo(idTitulo, 'smsId', smsId)
+          .then(() => resolve(smsId))
+          .catch(err => reject(err));
+      })
+      .catch(err => reject(err));
+  });
+}
+
+function deletarSms(id) {
+  return new Promise((resolve, reject) => {
+    const smsRef = db
+      .collection('Sms')
+      .doc(id);
+
+    smsRef
+      .get()
+      .then((snap) => {
+        const sms = snap.data();
+
+        mudarCampoTitulo(sms.tituloId, 'sms', DELETE_FIELD)
+          .then(() => {
+            smsRef
+              .delete()
+              .then(() => {
+                resolve();
+              }).catch(err => reject(err));
+          })
+          .catch(err => reject(err));
+      })
+      .catch(err => reject(err));
+  });
+}
+
 module.exports = {
   db,
   gravarTitulos,
   pegarTitulosPorPeriodo,
+  pegarTitulosValidosEmAberto,
   mudarCampoTitulo,
   deletarTitulo,
+  pegarEmpresas,
+  gravarEmpresa,
+  deletarEmpresa,
+  pegarEmpresaNumero,
+  novoSms,
+  deletarSms,
 };

@@ -15,7 +15,7 @@ class Titulo {
     this.emissao = {
       data: converteData(linhaP.slice(109, 117)),
       timestamp: converteData(linhaP.slice(109, 117)).getTime(),
-    }
+    };
     this.id = linhaP.slice(37, 57).trim();
     this.numeroDocumento = linhaP.slice(62, 77).trim();
 
