@@ -141,6 +141,10 @@ app.get('/whitelist', (req, res) => {
   }
 });
 
+app.get('/hello', (req, res) => {
+  res.send('hi');
+});
+
 module.exports = {
   app,
 };
