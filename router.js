@@ -15,6 +15,8 @@ const {
   gravarEmpresa,
   pegarEmpresaNumero,
   deletarEmpresa,
+  pegarSmsAgendados,
+  novoSms,
   deletarSms,
 } = require('./services');
 
@@ -98,13 +100,27 @@ app.delete('/empresas/:numero', (req, res) => {
     .catch(err => handleInternalError(err, res));
 });
 
+app.post('/sms', bodyParser.json(), (req, res) => {
+  const { titulo } = req.body;
+
+  novoSms(titulo)
+    .then(data => res.send(data))
+    .catch(err => handleInternalError(err, res));
+});
+
 app.delete('/sms/:smsId', (req, res) => {
   const { smsId } = req.params;
 
   deletarSms(smsId)
     .then(() => res.sendStatus(201))
     .catch(err => handleInternalError(err, res));
-})
+});
+
+app.get('/sms/agendados', (req, res) => {
+  pegarSmsAgendados()
+    .then(docs => res.send(docs))
+    .catch(err => handleInternalError(err, res));
+});
 
 app.post('/file', upload.single('file'), (req, res) => {
   const { file } = req;

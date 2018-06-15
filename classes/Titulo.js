@@ -20,11 +20,11 @@ class Titulo {
     this.numeroDocumento = linhaP.slice(62, 77).trim();
 
     this.pagador = {
-      id: linhaQ.charAt(17) === '1' ? linhaQ.slice(22, 33) : linhaQ.slice(18, 33),
+      id: linhaQ.charAt(17) === '1' ? linhaQ.slice(22, 33) : linhaQ.slice(19, 33),
       nome: linhaQ.slice(33, 73).trim(),
     };
 
-    this.menssagem = linhaR.slice(99, 139).trim();
+    this.mensagem = linhaR.slice(99, 139).trim();
   }
 }
 

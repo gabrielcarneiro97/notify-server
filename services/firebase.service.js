@@ -1,6 +1,9 @@
 const admin = require('firebase-admin');
+const moment = require('moment');
 
 const serviceAccount = require('./apiKey.json');
+
+const { agendarSms, cancelarAgendamento } = require('./zenvia.service');
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
@@ -84,7 +87,7 @@ function pegarTitulosValidosEmAberto() {
 
   return new Promise((resolve, reject) => {
     titulosCollection
-      .where('vencimento.timestamp', '>=', new Date().getTime())
+      .where('vencimento.timestamp', '>=', new Date().setHours(0, 0, 0, 0))
       .where('pago', '==', false)
       .get()
       .then((snap) => {
@@ -152,6 +155,17 @@ function pegarEmpresaNumero(numero) {
   });
 }
 
+function pegarEmpresaCnpj(cnpj) {
+  return new Promise((resolve, reject) => {
+    db
+      .collection('Empresas')
+      .where('cnpj', '==', cnpj)
+      .get()
+      .then(snap => resolve(snap._docs()[0].data()))
+      .catch(err => reject(err));
+  });
+}
+
 
 function gravarEmpresa(numero, dados) {
   return new Promise((resolve, reject) => {
@@ -175,20 +189,69 @@ function deletarEmpresa(numero) {
   });
 }
 
-function novoSms(dados) {
+function pegarSmsAgendados() {
   return new Promise((resolve, reject) => {
-    const { idTitulo } = dados;
-
     db
       .collection('Sms')
-      .add(dados)
+      .where('dataEnvio.timestamp', '>=', new Date().getTime())
+      .get()
       .then((snap) => {
-        const smsId = snap.id;
+        const snapDocs = snap._docs();
+        const docs = [];
 
-        // Fazer request para a Zenvia aqui
+        snapDocs.forEach((doc) => {
+          docs.push(doc.data());
+        });
+        resolve(docs);
+      })
+      .catch(err => reject(err));
+  });
+}
 
-        mudarCampoTitulo(idTitulo, 'smsId', smsId)
-          .then(() => resolve(smsId))
+function novoSms(titulo) {
+  return new Promise((resolve, reject) => {
+    const tituloId = titulo.id;
+
+    pegarEmpresaCnpj(titulo.pagador.id)
+      .then((empresa) => {
+        const destinatario = `55${empresa.telefone}`;
+        const horaEnvio = titulo.vencimento.timestamp - 50400000;
+
+        const mensagem =
+        `.\nBOLETO: ${titulo.numeroDocumento};\nREF: ${titulo.mensagem};\nVALOR: R$${titulo.valorLiquido};\nVENC: ${moment(titulo.vencimento.timestamp).format('DD/MM/YY')}.\nQualquer dúvida entrar em contato.`;
+
+        const sms = {
+          destinatario: empresa,
+          dataEnvio: {
+            timestamp: horaEnvio,
+            data: new Date(horaEnvio).toISOString(),
+          },
+          mensagem,
+          tituloId,
+        };
+
+        db
+          .collection('Sms')
+          .add(sms)
+          .then((snap) => {
+            const smsId = snap.id;
+
+            const zenviaData = {
+              from: 'ANDREA CONTABILIDADE',
+              to: destinatario,
+              schedule: new Date(horaEnvio).toISOString(),
+              id: smsId,
+              aggregateId: '33590',
+              msg: mensagem,
+            };
+
+            agendarSms(zenviaData)
+              .then(() => {
+                mudarCampoTitulo(tituloId, 'smsId', smsId)
+                  .then(() => resolve(smsId, sms))
+                  .catch(err => reject(err));
+              });
+          })
           .catch(err => reject(err));
       })
       .catch(err => reject(err));
@@ -201,18 +264,22 @@ function deletarSms(id) {
       .collection('Sms')
       .doc(id);
 
-    smsRef
-      .get()
-      .then((snap) => {
-        const sms = snap.data();
+    cancelarAgendamento(id)
+      .then(() => {
+        smsRef
+          .get()
+          .then((snap) => {
+            const sms = snap.data();
 
-        mudarCampoTitulo(sms.tituloId, 'sms', DELETE_FIELD)
-          .then(() => {
-            smsRef
-              .delete()
+            mudarCampoTitulo(sms.tituloId, 'smsId', DELETE_FIELD)
               .then(() => {
-                resolve();
-              }).catch(err => reject(err));
+                smsRef
+                  .delete()
+                  .then(() => {
+                    resolve();
+                  }).catch(err => reject(err));
+              })
+              .catch(err => reject(err));
           })
           .catch(err => reject(err));
       })
@@ -231,6 +298,7 @@ module.exports = {
   gravarEmpresa,
   deletarEmpresa,
   pegarEmpresaNumero,
+  pegarSmsAgendados,
   novoSms,
   deletarSms,
 };
