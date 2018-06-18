@@ -43,7 +43,7 @@ function pegarTitulosPorPeriodo(dados) {
   let {
     inicio, fim, soPagos, soEmAberto,
   } = dados;
-  const { empresaCnpj } = dados;
+  const { clienteId } = dados;
 
   inicio = parseInt(inicio, 10);
   fim = parseInt(fim, 10);
@@ -63,8 +63,8 @@ function pegarTitulosPorPeriodo(dados) {
       query = query.where('pago', '==', false);
     }
 
-    if (empresaCnpj) {
-      query = query.where('pagante.id', '==', empresaCnpj);
+    if (clienteId) {
+      query = query.where('pagante.id', '==', clienteId);
     }
 
     query
@@ -186,10 +186,10 @@ function deletarTitulo(id) {
   });
 }
 
-function pegarEmpresas() {
+function pegarClientes() {
   return new Promise((resolve, reject) => {
     db
-      .collection('Empresas')
+      .collection('Clientes')
       .get()
       .then((snap) => {
         const snapDocs = snap._docs();
@@ -205,10 +205,10 @@ function pegarEmpresas() {
 }
 
 
-function pegarEmpresaNumero(numero) {
+function pegarClienteNumero(numero) {
   return new Promise((resolve, reject) => {
     db
-      .collection('Empresas')
+      .collection('Clientes')
       .doc(numero)
       .get()
       .then(snap => resolve(snap.data()))
@@ -216,11 +216,11 @@ function pegarEmpresaNumero(numero) {
   });
 }
 
-function pegarEmpresaCnpj(cnpj) {
+function pegarClienteId(id) {
   return new Promise((resolve, reject) => {
     db
-      .collection('Empresas')
-      .where('cnpj', '==', cnpj)
+      .collection('Clientes')
+      .where('id', '==', id)
       .get()
       .then(snap => resolve(snap._docs()[0].data()))
       .catch(err => reject(err));
@@ -228,10 +228,10 @@ function pegarEmpresaCnpj(cnpj) {
 }
 
 
-function gravarEmpresa(numero, dados) {
+function gravarCliente(numero, dados) {
   return new Promise((resolve, reject) => {
     db
-      .collection('Empresas')
+      .collection('Clientes')
       .doc(numero)
       .set(dados)
       .then(() => resolve())
@@ -239,10 +239,10 @@ function gravarEmpresa(numero, dados) {
   });
 }
 
-function deletarEmpresa(numero) {
+function deletarCliente(numero) {
   return new Promise((resolve, reject) => {
     db
-      .collection('Empresas')
+      .collection('Clientes')
       .doc(numero)
       .delete()
       .then(() => resolve())
@@ -273,16 +273,16 @@ function novoSms(titulo) {
   return new Promise((resolve, reject) => {
     const tituloId = titulo.id;
 
-    pegarEmpresaCnpj(titulo.pagador.id)
-      .then((empresa) => {
-        const destinatario = `55${empresa.telefone}`;
+    pegarClienteId(titulo.pagador.id)
+      .then((cliente) => {
+        const destinatario = `55${cliente.telefone}`;
         const horaEnvio = titulo.vencimento.timestamp - 50400000;
 
         const mensagem =
         `.\nBOLETO: ${titulo.numeroDocumento};\nREF: ${titulo.mensagem};\nVALOR: R$${titulo.valorLiquido};\nVENC: ${moment(titulo.vencimento.timestamp).format('DD/MM/YY')}.\nQualquer dúvida entrar em contato.`;
 
         const sms = {
-          destinatario: empresa,
+          destinatario: cliente,
           dataEnvio: {
             timestamp: horaEnvio,
             data: new Date(horaEnvio).toISOString(),
@@ -326,10 +326,10 @@ module.exports = {
   pegarTitulosValidosEmAberto,
   mudarCampoTitulo,
   deletarTitulo,
-  pegarEmpresas,
-  gravarEmpresa,
-  deletarEmpresa,
-  pegarEmpresaNumero,
+  pegarClientes,
+  gravarCliente,
+  deletarCliente,
+  pegarClienteNumero,
   pegarSmsAgendados,
   novoSms,
   deletarSms,

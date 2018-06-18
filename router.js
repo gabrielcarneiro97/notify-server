@@ -11,10 +11,10 @@ const {
   pegarTitulosValidosEmAberto,
   mudarCampoTitulo,
   deletarTitulo,
-  pegarEmpresas,
-  gravarEmpresa,
-  pegarEmpresaNumero,
-  deletarEmpresa,
+  pegarClientes,
+  gravarCliente,
+  pegarClienteNumero,
+  deletarCliente,
   pegarSmsAgendados,
   novoSms,
   deletarSms,
@@ -71,32 +71,32 @@ app.delete('/titulos/:id', (req, res) => {
     .catch(err => handleInternalError(err, res));
 });
 
-app.get('/empresas', (req, res) => {
-  pegarEmpresas()
-    .then(empresas => res.send(empresas))
+app.get('/clientes', (req, res) => {
+  pegarClientes()
+    .then(clientes => res.send(clientes))
     .catch(err => handleInternalError(err, res));
 });
 
-app.get('/empresas/:numero', (req, res) => {
+app.get('/clietes/:numero', (req, res) => {
   const { numero } = req.params;
-  pegarEmpresaNumero(numero)
-    .then(empresa => res.send(empresa))
+  pegarClienteNumero(numero)
+    .then(cliente => res.send(cliente))
     .catch(err => handleInternalError(err, res));
 });
 
-app.put('/empresas/:numero', bodyParser.json(), (req, res) => {
+app.put('/clientes/:numero', bodyParser.json(), (req, res) => {
   const { numero } = req.params;
-  const { empresa } = req.body;
+  const { cliente } = req.body;
 
-  gravarEmpresa(numero, empresa)
+  gravarCliente(numero, cliente)
     .then(() => res.sendStatus(204))
     .catch(err => handleInternalError(err, res));
 });
 
-app.delete('/empresas/:numero', (req, res) => {
+app.delete('/clientes/:numero', (req, res) => {
   const { numero } = req.params;
 
-  deletarEmpresa(numero)
+  deletarCliente(numero)
     .then(() => res.sendStatus(201))
     .catch(err => handleInternalError(err, res));
 });
