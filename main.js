@@ -3,6 +3,7 @@ const { app } = require('./router');
 const { SSL } = require('./services');
 
 if (process.argv[2] === 'ssl') {
+  console.log(SSL);
   https.createServer(SSL, app).listen(8181, () => {
     console.log('SSL server listening 8181 port');
   });
