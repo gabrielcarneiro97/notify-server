@@ -1,3 +1,3 @@
 const axios = require('axios');
 
-axios.get('localhost:8181/hello').then(res => console.log(res.data));
+axios.get('https://localhost:8181/hello').then(res => console.log(res.data));
