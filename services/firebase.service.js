@@ -114,13 +114,56 @@ function mudarCampoTitulo(key, field, value) {
   });
 }
 
+function deletarSms(id) {
+  return new Promise((resolve, reject) => {
+    const smsRef = db
+      .collection('Sms')
+      .doc(id);
+
+    cancelarAgendamento(id)
+      .then(() => {
+        smsRef
+          .get()
+          .then((snap) => {
+            const sms = snap.data();
+
+            mudarCampoTitulo(sms.tituloId, 'smsId', DELETE_FIELD)
+              .then(() => {
+                smsRef
+                  .delete()
+                  .then(() => {
+                    resolve();
+                  }).catch(err => reject(err));
+              })
+              .catch(err => reject(err));
+          })
+          .catch(err => reject(err));
+      })
+      .catch(err => reject(err));
+  });
+}
+
 function deletarTitulo(id) {
   return new Promise((resolve, reject) => {
-    db
+    const tituloRef = db
       .collection('Titulos')
-      .doc(id)
-      .delete()
-      .then(() => resolve())
+      .doc(id);
+
+    tituloRef
+      .get()
+      .then((snap) => {
+        const titulo = snap.data();
+
+        if (titulo.smsId) {
+          deletarSms(titulo.smsId)
+            .catch(err => reject(err));
+        }
+
+        tituloRef
+          .delete()
+          .then(() => resolve())
+          .catch(err => reject(err));
+      })
       .catch(err => reject(err));
   });
 }
@@ -251,35 +294,6 @@ function novoSms(titulo) {
                   .then(() => resolve(smsId, sms))
                   .catch(err => reject(err));
               });
-          })
-          .catch(err => reject(err));
-      })
-      .catch(err => reject(err));
-  });
-}
-
-function deletarSms(id) {
-  return new Promise((resolve, reject) => {
-    const smsRef = db
-      .collection('Sms')
-      .doc(id);
-
-    cancelarAgendamento(id)
-      .then(() => {
-        smsRef
-          .get()
-          .then((snap) => {
-            const sms = snap.data();
-
-            mudarCampoTitulo(sms.tituloId, 'smsId', DELETE_FIELD)
-              .then(() => {
-                smsRef
-                  .delete()
-                  .then(() => {
-                    resolve();
-                  }).catch(err => reject(err));
-              })
-              .catch(err => reject(err));
           })
           .catch(err => reject(err));
       })
