@@ -103,17 +103,6 @@ function pegarTitulosValidosEmAberto() {
   });
 }
 
-function mudarCampoTitulo(key, field, value) {
-  return new Promise((resolve, reject) => {
-    db
-      .collection('Titulos')
-      .doc(key)
-      .update({ [field]: value })
-      .then(snap => resolve(snap))
-      .catch(err => reject(err));
-  });
-}
-
 function deletarSms(id) {
   return new Promise((resolve, reject) => {
     const smsRef = db
@@ -127,7 +116,10 @@ function deletarSms(id) {
           .then((snap) => {
             const sms = snap.data();
 
-            mudarCampoTitulo(sms.tituloId, 'smsId', DELETE_FIELD)
+            db
+              .collection('Titulos')
+              .doc(sms.tituloId)
+              .update({ smsId: DELETE_FIELD })
               .then(() => {
                 smsRef
                   .delete()
@@ -139,6 +131,32 @@ function deletarSms(id) {
           })
           .catch(err => reject(err));
       })
+      .catch(err => reject(err));
+  });
+}
+
+function mudarCampoTitulo(key, field, value) {
+  return new Promise((resolve, reject) => {
+    const tituloRef = db
+      .collection('Titulos')
+      .doc(key);
+
+    if (field === 'pago' && value === false) {
+      tituloRef
+        .get()
+        .then((snap) => {
+          const titulo = snap.data();
+          if (titulo.smsId) {
+            deletarSms(titulo.smsId)
+              .catch(err => reject(err));
+          }
+        })
+        .catch(err => reject(err));
+    }
+
+    tituloRef
+      .update({ [field]: value })
+      .then(snap => resolve(snap))
       .catch(err => reject(err));
   });
 }

@@ -53,8 +53,9 @@ app.get('/titulos/aberto', (req, res) => {
     .catch(err => handleInternalError(err, res));
 });
 
-app.put('/titulos', bodyParser.json(), (req, res) => {
-  const { id, pago } = req.query;
+app.put('/titulos/:id', bodyParser.json(), (req, res) => {
+  const { id } = req.params;
+  const { pago } = req.query;
 
   const pagoBool = pago === 'true';
 
