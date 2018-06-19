@@ -14,23 +14,22 @@ const db = admin.firestore();
 const DELETE_FIELD = admin.firestore.FieldValue.delete();
 
 function gravarTitulos(titulos) {
-  const titulosCollection = db.collection('Titulos');
-
-  const promises = [];
-
-  for (let i = 0; i < titulos.length; i += 1) {
-    const titulo = titulos[i];
-    const getPromise = titulosCollection.doc(titulo.id).get();
-    promises.push(getPromise);
-
-    getPromise.then((snap) => {
-      if (!snap.data()) {
-        titulosCollection.doc(titulo.id).set(titulo);
-      }
-    });
-  }
-
   return new Promise((resolve, reject) => {
+    const titulosCollection = db.collection('Titulos');
+
+    const promises = [];
+
+    for (let i = 0; i < titulos.length; i += 1) {
+      const titulo = titulos[i];
+      const getPromise = titulosCollection.doc(titulo.id).get();
+      promises.push(getPromise);
+
+      getPromise.then((snap) => {
+        if (!snap.data()) {
+          titulosCollection.doc(titulo.id).set(titulo);
+        }
+      });
+    }
     Promise
       .all(promises)
       .then(() => resolve())
@@ -279,7 +278,7 @@ function novoSms(titulo) {
         const horaEnvio = titulo.vencimento.timestamp - 50400000;
 
         const mensagem =
-        `.\nBOLETO: ${titulo.numeroDocumento};\nPAG:${cliente.nome}\nREF: ${titulo.mensagem};\nVALOR: R$${titulo.valorLiquido};\nVENC: ${moment(titulo.vencimento.timestamp).format('DD/MM/YY')}.\nQualquer dúvida entrar em contato.`;
+        `.\nBOLETO: ${titulo.numeroDocumento};\nPAG: ${cliente.nome}\nREF: ${titulo.mensagem};\nVALOR: R$${titulo.valorLiquido};\nVENC: ${moment(titulo.vencimento.timestamp).format('DD/MM/YY')}.\nQualquer dúvida entrar em contato.`;
 
         const sms = {
           destinatario: cliente,
