@@ -279,7 +279,7 @@ function novoSms(titulo) {
         const horaEnvio = titulo.vencimento.timestamp - 50400000;
 
         const mensagem =
-        `.\nBOLETO: ${titulo.numeroDocumento};\nREF: ${titulo.mensagem};\nVALOR: R$${titulo.valorLiquido};\nVENC: ${moment(titulo.vencimento.timestamp).format('DD/MM/YY')}.\nQualquer dúvida entrar em contato.`;
+        `.\nBOLETO: ${titulo.numeroDocumento};\nPAG:${cliente.nome}\nREF: ${titulo.mensagem};\nVALOR: R$${titulo.valorLiquido};\nVENC: ${moment(titulo.vencimento.timestamp).format('DD/MM/YY')}.\nQualquer dúvida entrar em contato.`;
 
         const sms = {
           destinatario: cliente,
