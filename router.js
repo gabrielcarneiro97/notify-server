@@ -105,7 +105,7 @@ app.post('/sms', bodyParser.json(), (req, res) => {
   const { titulo } = req.body;
 
   novoSms(titulo)
-    .then(data => res.send(data))
+    .then(({ smsId, sms }) => res.send({ smsId, sms }))
     .catch(err => handleInternalError(err, res));
 });
 

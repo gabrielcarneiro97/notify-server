@@ -308,7 +308,7 @@ function novoSms(titulo) {
             agendarSms(zenviaData)
               .then(() => {
                 mudarCampoTitulo(tituloId, 'smsId', smsId)
-                  .then(() => resolve(smsId, sms))
+                  .then(() => resolve({ smsId, sms }))
                   .catch(err => reject(err));
               });
           })
