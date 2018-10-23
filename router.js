@@ -125,12 +125,8 @@ app.get('/sms/agendados', (req, res) => {
 
 app.post('/file', upload.single('file'), (req, res) => {
   const { file } = req;
-  const { accept } = req.query;
-
-  if (accept === '.REM') {
-    const rem = new Remessa(file.buffer);
-    res.send(rem.semLines());
-  }
+  const rem = new Remessa(file.buffer);
+  res.send(rem.semLines());
 });
 
 app.get('/whitelist', (req, res) => {

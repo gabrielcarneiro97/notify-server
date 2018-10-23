@@ -24,7 +24,9 @@ class Titulo {
       nome: linhaQ.slice(33, 73).trim(),
     };
 
-    this.mensagem = linhaR.slice(99, 139).trim();
+    if (linhaR) {
+      this.mensagem = linhaR.slice(99, 139).trim();
+    }
   }
 }
 
