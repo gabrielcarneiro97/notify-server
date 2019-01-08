@@ -68,7 +68,7 @@ class Remessa {
       }
     });
 
-    if (linhasTitulo.linhaP && linhasTitulo.linhaQ && linhasTitulo.linhaR) {
+    if (linhasTitulo.linhaP && linhasTitulo.linhaQ) {
       titulos.push(new Titulo(linhasTitulo));
     }
 
