@@ -1,0 +1,14 @@
+{
+  "header": {
+    "codigoBanco": [0, 0, 3],
+    "loteServico": [0, 4, 7],
+    "dataGeracao": [0, 143, 151],
+    "numeroRemessa": [1, 183, 191],
+    "emitenteId": [[0, 17], [0, 21, 32], [0, 18, 32]],
+    "emitenteNome": [0, 72, 102],
+    "agenciaNum": [0, 52, 57],
+    "agenciaDigito": [0, 57],
+    "ccNum": [0, 58, 70],
+    "ccDigito": [0, 70]
+  }
+}

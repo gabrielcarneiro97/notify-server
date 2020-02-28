@@ -49,7 +49,7 @@ class Remessa {
   }
 
   defineTitulos() {
-    const lines = this.lineByline().filter(line => line.startsWith('00100013'));
+    const lines = this.lineByline().filter((line) => line.startsWith('00100013'));
 
     const titulos = [];
 
@@ -88,9 +88,7 @@ class Remessa {
   }
 
   semLines() {
-    const self = {
-      ...this,
-    };
+    const self = { ...this };
     delete self.__lines;
     delete self.stringFile;
 

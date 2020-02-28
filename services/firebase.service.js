@@ -13,32 +13,21 @@ const db = admin.firestore();
 
 const DELETE_FIELD = admin.firestore.FieldValue.delete();
 
-function gravarTitulos(titulos) {
-  return new Promise((resolve, reject) => {
-    const titulosCollection = db.collection('Titulos');
+const titulosCollection = db.collection('Titulos');
 
-    const promises = [];
-
-    for (let i = 0; i < titulos.length; i += 1) {
-      const titulo = titulos[i];
-      const getPromise = titulosCollection.doc(titulo.id).get();
-      promises.push(getPromise);
-
-      getPromise.then((snap) => {
-        if (!snap.data()) {
-          titulosCollection.doc(titulo.id).set(titulo);
-        }
-      });
-    }
-    Promise
-      .all(promises)
-      .then(() => resolve())
-      .catch(err => reject(err));
-  });
+async function gravarTitulos(titulos) {
+  return Promise.all(titulos.map(
+    async (titulo) => {
+      const { id } = titulo;
+      const snap = await titulosCollection.doc(id).get();
+      if (!snap.data()) {
+        await titulosCollection.doc(id).set(titulo);
+      }
+    },
+  ));
 }
 
-function pegarTitulosPorPeriodo(dados) {
-  const titulosCollection = db.collection('Titulos');
+async function pegarTitulosPorPeriodo(dados) {
   let {
     inicio, fim, soPagos, soEmAberto,
   } = dados;
@@ -49,60 +38,41 @@ function pegarTitulosPorPeriodo(dados) {
   soPagos = soPagos === 'true';
   soEmAberto = soEmAberto === 'true';
 
-  return new Promise((resolve, reject) => {
-    let query = titulosCollection
-      .where('vencimento.timestamp', '>=', inicio)
-      .where('vencimento.timestamp', '<=', fim);
 
-    if (soPagos) {
-      query = query.where('pago', '==', true);
-    }
+  let query = titulosCollection
+    .where('vencimento.timestamp', '>=', inicio)
+    .where('vencimento.timestamp', '<=', fim);
 
-    if (soEmAberto) {
-      query = query.where('pago', '==', false);
-    }
+  if (soPagos) {
+    query = query.where('pago', '==', true);
+  }
 
-    if (clienteId) {
-      query = query.where('pagante.id', '==', clienteId);
-    }
+  if (soEmAberto) {
+    query = query.where('pago', '==', false);
+  }
 
-    query
-      .get()
-      .then((snap) => {
-        const snapDocs = snap._docs();
-        const docs = [];
+  if (clienteId) {
+    query = query.where('pagante.id', '==', clienteId);
+  }
 
-        snapDocs.forEach((doc) => {
-          docs.push(doc.data());
-        });
-        resolve(docs);
-      })
-      .catch(err => reject(err));
-  });
+  const snap = await query.get();
+  const docs = snap._docs();
+
+  return docs.map((doc) => doc.data());
 }
 
-function pegarTitulosValidosEmAberto() {
-  const titulosCollection = db.collection('Titulos');
+async function pegarTitulosValidosEmAberto() {
+  const query = titulosCollection
+    .where('vencimento.timestamp', '>=', new Date().setHours(0, 0, 0, 0))
+    .where('pago', '==', false);
 
-  return new Promise((resolve, reject) => {
-    titulosCollection
-      .where('vencimento.timestamp', '>=', new Date().setHours(0, 0, 0, 0))
-      .where('pago', '==', false)
-      .get()
-      .then((snap) => {
-        const snapDocs = snap._docs();
-        const docs = [];
+  const snap = await query.get();
+  const docs = snap._docs();
 
-        snapDocs.forEach((doc) => {
-          docs.push(doc.data());
-        });
-        resolve(docs);
-      })
-      .catch(err => reject(err));
-  });
+  return docs.map((doc) => doc.data());
 }
 
-function deletarSms(id) {
+async function deletarSms(id) {
   return new Promise((resolve, reject) => {
     const smsRef = db
       .collection('Sms')
@@ -124,13 +94,13 @@ function deletarSms(id) {
                   .delete()
                   .then(() => {
                     resolve();
-                  }).catch(err => reject(err));
+                  }).catch((err) => reject(err));
               })
-              .catch(err => reject(err));
+              .catch((err) => reject(err));
           })
-          .catch(err => reject(err));
+          .catch((err) => reject(err));
       })
-      .catch(err => reject(err));
+      .catch((err) => reject(err));
   });
 }
 
@@ -147,16 +117,16 @@ function mudarCampoTitulo(key, field, value) {
           const titulo = snap.data();
           if (titulo.smsId) {
             deletarSms(titulo.smsId)
-              .catch(err => reject(err));
+              .catch((err) => reject(err));
           }
         })
-        .catch(err => reject(err));
+        .catch((err) => reject(err));
     }
 
     tituloRef
       .update({ [field]: value })
-      .then(snap => resolve(snap))
-      .catch(err => reject(err));
+      .then((snap) => resolve(snap))
+      .catch((err) => reject(err));
   });
 }
 
@@ -173,15 +143,15 @@ function deletarTitulo(id) {
 
         if (titulo.smsId) {
           deletarSms(titulo.smsId)
-            .catch(err => reject(err));
+            .catch((err) => reject(err));
         }
 
         tituloRef
           .delete()
           .then(() => resolve())
-          .catch(err => reject(err));
+          .catch((err) => reject(err));
       })
-      .catch(err => reject(err));
+      .catch((err) => reject(err));
   });
 }
 
@@ -199,7 +169,7 @@ function pegarClientes() {
         });
         resolve(docs);
       })
-      .catch(err => reject(err));
+      .catch((err) => reject(err));
   });
 }
 
@@ -210,8 +180,8 @@ function pegarClienteNumero(numero) {
       .collection('Clientes')
       .doc(numero)
       .get()
-      .then(snap => resolve(snap.data()))
-      .catch(err => reject(err));
+      .then((snap) => resolve(snap.data()))
+      .catch((err) => reject(err));
   });
 }
 
@@ -221,8 +191,8 @@ function pegarClienteId(id) {
       .collection('Clientes')
       .where('id', '==', id)
       .get()
-      .then(snap => resolve(snap._docs()[0].data()))
-      .catch(err => reject(err));
+      .then((snap) => resolve(snap._docs()[0].data()))
+      .catch((err) => reject(err));
   });
 }
 
@@ -234,7 +204,7 @@ function gravarCliente(numero, dados) {
       .doc(numero)
       .set(dados)
       .then(() => resolve())
-      .catch(err => reject(err));
+      .catch((err) => reject(err));
   });
 }
 
@@ -245,7 +215,7 @@ function deletarCliente(numero) {
       .doc(numero)
       .delete()
       .then(() => resolve())
-      .catch(err => reject(err));
+      .catch((err) => reject(err));
   });
 }
 
@@ -264,7 +234,7 @@ function pegarSmsAgendados() {
         });
         resolve(docs);
       })
-      .catch(err => reject(err));
+      .catch((err) => reject(err));
   });
 }
 
@@ -277,8 +247,7 @@ function novoSms(titulo) {
         const destinatario = `55${cliente.telefone}`;
         const horaEnvio = titulo.vencimento.timestamp - 50400000;
 
-        const mensagem =
-        `.\nBOLETO: ${titulo.numeroDocumento};\nPAG: ${cliente.nome}\nREF: ${titulo.mensagem};\nVALOR: R$${titulo.valorLiquido};\nVENC: ${moment(titulo.vencimento.timestamp).format('DD/MM/YY')}.\nQualquer dúvida entrar em contato.\nCaso o título já tenha sido pago, desconsidere.`;
+        const mensagem = `.\nBOLETO: ${titulo.numeroDocumento};\nPAG: ${cliente.nome}\nREF: ${titulo.mensagem};\nVALOR: R$${titulo.valorLiquido};\nVENC: ${moment(titulo.vencimento.timestamp).format('DD/MM/YY')}.\nQualquer dúvida entrar em contato.\nCaso o título já tenha sido pago, desconsidere.`;
 
         const sms = {
           destinatario: cliente,
@@ -309,12 +278,12 @@ function novoSms(titulo) {
               .then(() => {
                 mudarCampoTitulo(tituloId, 'smsId', smsId)
                   .then(() => resolve({ smsId, sms }))
-                  .catch(err => reject(err));
+                  .catch((err) => reject(err));
               });
           })
-          .catch(err => reject(err));
+          .catch((err) => reject(err));
       })
-      .catch(err => reject(err));
+      .catch((err) => reject(err));
   });
 }
 
