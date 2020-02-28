@@ -9,7 +9,7 @@ function authBase64({ login, senha }) {
   return `Basic ${auth}`;
 }
 
-function agendarSms(dados) {
+async function agendarSms(dados) {
   const headers = {
     'Access-Control-Allow-Origin': '*',
     'Content-type': 'application/json',
@@ -20,7 +20,7 @@ function agendarSms(dados) {
   return axios.post(`${api}/send-sms`, { sendSmsRequest: dados }, { headers });
 }
 
-function cancelarAgendamento(id) {
+async function cancelarAgendamento(id) {
   const headers = {
     'Access-Control-Allow-Origin': '*',
     Authorization: authBase64(authZenvia),
