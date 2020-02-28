@@ -13,15 +13,17 @@ const db = admin.firestore();
 
 const DELETE_FIELD = admin.firestore.FieldValue.delete();
 
-const titulosCollection = db.collection('Titulos');
+const titulosCol = db.collection('Titulos');
+const smsCol = db.collection('Sms');
+const clientesCol = db.collection('Clientes');
 
 async function gravarTitulos(titulos) {
   return Promise.all(titulos.map(
     async (titulo) => {
       const { id } = titulo;
-      const snap = await titulosCollection.doc(id).get();
+      const snap = await titulosCol.doc(id).get();
       if (!snap.data()) {
-        await titulosCollection.doc(id).set(titulo);
+        await titulosCol.doc(id).set(titulo);
       }
     },
   ));
@@ -39,7 +41,7 @@ async function pegarTitulosPorPeriodo(dados) {
   soEmAberto = soEmAberto === 'true';
 
 
-  let query = titulosCollection
+  let query = titulosCol
     .where('vencimento.timestamp', '>=', inicio)
     .where('vencimento.timestamp', '<=', fim);
 
@@ -62,7 +64,7 @@ async function pegarTitulosPorPeriodo(dados) {
 }
 
 async function pegarTitulosValidosEmAberto() {
-  const query = titulosCollection
+  const query = titulosCol
     .where('vencimento.timestamp', '>=', new Date().setHours(0, 0, 0, 0))
     .where('pago', '==', false);
 
@@ -73,218 +75,119 @@ async function pegarTitulosValidosEmAberto() {
 }
 
 async function deletarSms(id) {
-  return new Promise((resolve, reject) => {
-    const smsRef = db
-      .collection('Sms')
-      .doc(id);
+  const smsRef = smsCol.doc(id);
+  await cancelarAgendamento(id);
 
-    cancelarAgendamento(id)
-      .then(() => {
-        smsRef
-          .get()
-          .then((snap) => {
-            const sms = snap.data();
+  const smsSnap = await smsRef.get();
+  const sms = smsSnap.data();
 
-            db
-              .collection('Titulos')
-              .doc(sms.tituloId)
-              .update({ smsId: DELETE_FIELD })
-              .then(() => {
-                smsRef
-                  .delete()
-                  .then(() => {
-                    resolve();
-                  }).catch((err) => reject(err));
-              })
-              .catch((err) => reject(err));
-          })
-          .catch((err) => reject(err));
-      })
-      .catch((err) => reject(err));
-  });
+  await titulosCol.doc(sms.tituloId).update({ smsId: DELETE_FIELD });
+  await smsRef.delete();
 }
 
-function mudarCampoTitulo(key, field, value) {
-  return new Promise((resolve, reject) => {
-    const tituloRef = db
-      .collection('Titulos')
-      .doc(key);
+async function mudarCampoTitulo(id, field, value) {
+  const tituloRef = titulosCol.doc(id);
 
-    if (field === 'pago' && value === false) {
-      tituloRef
-        .get()
-        .then((snap) => {
-          const titulo = snap.data();
-          if (titulo.smsId) {
-            deletarSms(titulo.smsId)
-              .catch((err) => reject(err));
-          }
-        })
-        .catch((err) => reject(err));
-    }
+  if (field === 'pago' && value === false) {
+    const snap = await tituloRef.get();
+    const titulo = snap.data();
+    if (titulo.smsId) await deletarSms(titulo.smsId);
+  }
 
-    tituloRef
-      .update({ [field]: value })
-      .then((snap) => resolve(snap))
-      .catch((err) => reject(err));
-  });
+  return tituloRef.update({ [field]: value });
 }
 
-function deletarTitulo(id) {
-  return new Promise((resolve, reject) => {
-    const tituloRef = db
-      .collection('Titulos')
-      .doc(id);
+async function deletarTitulo(id) {
+  const tituloRef = titulosCol.doc(id);
+  const snap = await tituloRef.get();
 
-    tituloRef
-      .get()
-      .then((snap) => {
-        const titulo = snap.data();
+  const titulo = snap.data();
 
-        if (titulo.smsId) {
-          deletarSms(titulo.smsId)
-            .catch((err) => reject(err));
-        }
+  if (titulo.smsId) await deletarSms(titulo.smsId);
 
-        tituloRef
-          .delete()
-          .then(() => resolve())
-          .catch((err) => reject(err));
-      })
-      .catch((err) => reject(err));
-  });
+  return tituloRef.delete();
 }
 
-function pegarClientes() {
-  return new Promise((resolve, reject) => {
-    db
-      .collection('Clientes')
-      .get()
-      .then((snap) => {
-        const snapDocs = snap._docs();
-        const docs = [];
-
-        snapDocs.forEach((doc) => {
-          docs.push(doc.data());
-        });
-        resolve(docs);
-      })
-      .catch((err) => reject(err));
-  });
+async function pegarClientes() {
+  const snap = await clientesCol.get();
+  const docs = snap._docs();
+  return docs.map((doc) => doc.data());
 }
 
 
-function pegarClienteNumero(numero) {
-  return new Promise((resolve, reject) => {
-    db
-      .collection('Clientes')
-      .doc(numero)
-      .get()
-      .then((snap) => resolve(snap.data()))
-      .catch((err) => reject(err));
-  });
+async function pegarClienteNumero(numero) {
+  const snap = await clientesCol.doc(numero).get();
+  return snap.data();
 }
 
-function pegarClienteId(id) {
-  return new Promise((resolve, reject) => {
-    db
-      .collection('Clientes')
-      .where('id', '==', id)
-      .get()
-      .then((snap) => resolve(snap._docs()[0].data()))
-      .catch((err) => reject(err));
-  });
+async function pegarClienteId(id) {
+  const snap = await clientesCol.where('id', '==', id).get();
+  return snap._docs()[0].data();
 }
 
 
-function gravarCliente(numero, dados) {
-  return new Promise((resolve, reject) => {
-    db
-      .collection('Clientes')
-      .doc(numero)
-      .set(dados)
-      .then(() => resolve())
-      .catch((err) => reject(err));
-  });
+async function gravarCliente(numero, dados) {
+  return clientesCol.doc(numero).set(dados);
 }
 
-function deletarCliente(numero) {
-  return new Promise((resolve, reject) => {
-    db
-      .collection('Clientes')
-      .doc(numero)
-      .delete()
-      .then(() => resolve())
-      .catch((err) => reject(err));
-  });
+async function deletarCliente(numero) {
+  return clientesCol.doc(numero).delete();
 }
 
-function pegarSmsAgendados() {
-  return new Promise((resolve, reject) => {
-    db
-      .collection('Sms')
-      .where('dataEnvio.timestamp', '>=', new Date().getTime())
-      .get()
-      .then((snap) => {
-        const snapDocs = snap._docs();
-        const docs = [];
+async function pegarSmsAgendados() {
+  const snap = await smsCol
+    .where('dataEnvio.timestamp', '>=', new Date().getTime())
+    .get();
 
-        snapDocs.forEach((doc) => {
-          docs.push(doc.data());
-        });
-        resolve(docs);
-      })
-      .catch((err) => reject(err));
-  });
+  const docs = snap._docs();
+
+  return docs.map((doc) => doc.data());
 }
 
-function novoSms(titulo) {
-  return new Promise((resolve, reject) => {
-    const tituloId = titulo.id;
+async function novoSms(titulo) {
+  const tituloId = titulo.id;
 
-    pegarClienteId(titulo.pagador.id)
-      .then((cliente) => {
-        const destinatario = `55${cliente.telefone}`;
-        const horaEnvio = titulo.vencimento.timestamp - 50400000;
+  const cliente = await pegarClienteId(titulo.pagador.id);
 
-        const mensagem = `.\nBOLETO: ${titulo.numeroDocumento};\nPAG: ${cliente.nome}\nREF: ${titulo.mensagem};\nVALOR: R$${titulo.valorLiquido};\nVENC: ${moment(titulo.vencimento.timestamp).format('DD/MM/YY')}.\nQualquer dúvida entrar em contato.\nCaso o título já tenha sido pago, desconsidere.`;
+  const destinatario = `55${cliente.telefone}`;
+  const horaEnvio = titulo.vencimento.timestamp - 50400000;
+  const mensagem = `.
+  BOLETO: ${titulo.numeroDocumento};
+  PAG: ${cliente.nome}
+  REF: ${titulo.mensagem};
+  VALOR: R$${titulo.valorLiquido};
+  VENC: ${moment(titulo.vencimento.timestamp).format('DD/MM/YY')}.
+  Qualquer dúvida entrar em contato.
+  Caso o título já tenha sido pago, desconsidere.`;
 
-        const sms = {
-          destinatario: cliente,
-          dataEnvio: {
-            timestamp: horaEnvio,
-            data: new Date(horaEnvio).toISOString(),
-          },
-          mensagem,
-          tituloId,
-        };
+  const sms = {
+    destinatario: cliente,
+    dataEnvio: {
+      timestamp: horaEnvio,
+      data: new Date(horaEnvio).toISOString(),
+    },
+    mensagem,
+    tituloId,
+  };
 
-        db
-          .collection('Sms')
-          .add(sms)
-          .then((snap) => {
-            const smsId = snap.id;
+  const snap = await smsCol.add(sms);
 
-            const zenviaData = {
-              from: 'ANDREA CONTABILIDADE',
-              to: destinatario,
-              schedule: new Date(horaEnvio).toISOString(),
-              id: smsId,
-              aggregateId: '33590',
-              msg: mensagem,
-            };
+  const smsId = snap.id;
 
-            agendarSms(zenviaData)
-              .then(() => {
-                mudarCampoTitulo(tituloId, 'smsId', smsId)
-                  .then(() => resolve({ smsId, sms }))
-                  .catch((err) => reject(err));
-              });
-          })
-          .catch((err) => reject(err));
-      })
-      .catch((err) => reject(err));
-  });
+  const zenviaData = {
+    from: 'ANDREA CONTABILIDADE',
+    to: destinatario,
+    schedule: new Date(horaEnvio).toISOString(),
+    id: smsId,
+    aggregateId: '33590',
+    msg: mensagem,
+  };
+
+  await agendarSms(zenviaData);
+  await mudarCampoTitulo(tituloId, 'smsId', smsId);
+
+
+  return { smsId, sms };
 }
 
 module.exports = {
